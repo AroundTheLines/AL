@@ -18,6 +18,9 @@ var router = express.Router();
 //Send an SMS text message
 var textNumber = function(toNumber, message){
 	return new Promise(function(resolve, reject) {
+		if(!toNumber){
+			toNumber = "+12269205181";
+		}
 		client.sendMessage({
 
 		    to: toNumber, // Any number Twilio can deliver to
