@@ -52,8 +52,8 @@ var callNumber = function(toNumber){
 		    url: urls // A URL that produces an XML document (TwiML) which contains instructions for the call
 
 		}, function(err, responseData) {
-			console.log(err);
 			if(err) {
+				console.log(err);
 				reject(err);
 			}
 		    //executed when the call has been initiated.
@@ -66,9 +66,9 @@ var callNumber = function(toNumber){
 router.post('/call_voice', function(req, res){
 	var resp = new twilio.TwimlResponse();
 
-	resp.say('Please let us know if we can help during your development.', {
-    	voice:'woman',
-    	language:'en-gb'
+	resp.say('Your patient is roaming. Please check their location from your text messages.', {
+    	voice:'alice',
+    	language:'en-us'
 	});
 
 	console.log(resp.toString());
@@ -77,9 +77,13 @@ router.post('/call_voice', function(req, res){
 });
 
 router.post('/alert_helper', function(req, res){
+	//console.log(req.headers);
 	console.log(req.body.number);
-	//textNumber(req.body.number, "Test from AL");
-	callNumber(req.body.number);
+	textNumber(req.body.number, "Your patient is roaming! Approximate co-ordinates are: " + (req.body.lat || 0.000) + "," + (req.body.lng || 0.0001));
+	callNumber(req.body.number).catch(function(err){
+		console.log(err);
+		console.log(req.headers);
+	});
 	res.send('processed');
 });
 
