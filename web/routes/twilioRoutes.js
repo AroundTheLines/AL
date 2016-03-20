@@ -4,6 +4,7 @@ var express = require('express');
 var _ = require('lodash');
 var request = require('request');
 var twilio = require('twilio');
+var rp = require('request-promise');
 
 // Twilio Credentials
 var accountSid = process.env.ACCOUNT_SID || 'ACf14e3ba903d05bddc9ca4c69e8be6d8d';
@@ -14,6 +15,11 @@ var FROM_NUMBER = '+12267792228';
 var client = twilio(accountSid, authToken);
 
 var router = express.Router();
+
+var numConnections = 0;
+var macAddresses = [];
+var whitelisted = "02:1a:11:f9:95:cd";
+var location = {};
 
 //Send an SMS text message
 var textNumber = function(toNumber, message){
@@ -41,6 +47,7 @@ var textNumber = function(toNumber, message){
 	});
 };
 
+// Call a number
 var callNumber = function(toNumber){
 	return new Promise(function(resolve, reject){
 		var urls = 'http://22ab2fae.ngrok.io/call_voice';
@@ -57,9 +64,20 @@ var callNumber = function(toNumber){
 				reject(err);
 			}
 		    //executed when the call has been initiated.
-		    console.log(responseData.from); // outputs "+14506667788"
+		    console.log("callNumber responseData: " + responseData.from); // outputs "+14506667788"
 		});
 	});
+};
+
+var getLocation = function(macAddress){
+	return {
+		method: 'POST',
+		uri: 'https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBIJxVeb8GOebSNEEC_pjOUKEKaYhPVvus',
+		body: {
+			"wifiAccessPoints": macAddress
+		},
+		json: true
+	}
 };
 
 // Customize the call response message
@@ -71,22 +89,51 @@ router.post('/call_voice', function(req, res){
     	language:'en-us'
 	});
 
-	console.log(resp.toString());
+	console.log("call_voice response: " + resp.toString());
 	res.type('text/xml');
 	res.send(resp.toString());
 });
 
-router.post('/alert_helper', function(req, res){
+router.get('/alert_helper', function(req, res){
 	//console.log(req.headers);
-	console.log(req.body.number);
-	textNumber(req.body.number, "Your patient is roaming! Approximate co-ordinates are: " + (req.body.lat || 0.000) + "," + (req.body.lng || 0.0001));
-	callNumber(req.body.number).catch(function(err){
-		console.log(err);
-		console.log(req.headers);
-	});
+	console.log("Request Query Parameters: ");
+	console.log(JSON.stringify(req.query));
+	console.log("---");
+
+	macAddresses.push({"macAddress": req.query.mac, "signalStrength": parseInt(req.query.signal.substring(6))});
+	console.log(macAddresses);
 	res.send('processed');
 });
 
+router.get('/number_connections', function(req, res){
+	console.log("number_connections: ");
+	console.log(req.query);
+	numConnections = parseInt(req.query.connections);
+	macAddresses = [];
+	res.send("processed.");
+});
+
+// router.get('/whitelisted_mac', function(req, res){
+// 	whitelisted = req.query.whitelist;
+// 	console.log(req.query);
+// 	res.send('mac address now whitelisted');
+// });
+
+setInterval(function(){
+	console.log("It's been one minute!");
+	if(!macAddresses.length){
+		console.log("mac addresses empty");
+	}else{
+		console.log("mac addresses not empty");
+		rp(getLocation(macAddresses)).then(function(res){
+			textNumber(( process.env.CARETAKER_PHONE || "+14167990397"), "Your patient is roaming! Approximate co-ordinates are: " + (res.location.lat || 0.000) + ", " + (res.location.lng || 0.0001) + " with an accuracy of " + (res.accuracy || 0.1234) + " meters." );
+			callNumber(( process.env.CARETAKER_PHONE || "+14167990397"));
+		}).catch(function(err){
+			console.log(JSON.stringify(err));
+		});
+		macAddresses = [];
+	}
+}, 10000);
 
 
 module.exports = router;
