@@ -1,5 +1,13 @@
-# Turns on wpa_supplicant to /Users/Will enable wpa_cli
-systemctl enable  wpa_supplicant
+systemctl enable wpa_supplicant
+currentwifi=$(iwconfig 2>&1 | grep ESSID)
+nowwifi=$(iwconfig 2>&1 | grep ESSID)
+echo $currentwifi
+while [[ $currentwifi == *"$nowwifi"* ]]
+do
+sleep 5
+nowwifi=$(iwconfig 2>&1 | grep ESSID)
+echo 'loop'
+done
 
 # Use wpa_cli to scan for networks
 wpa_cli -i wlan0 scan
@@ -14,15 +22,17 @@ awk ' /WPA/ {next} /WEP/ {next} /WPS/ {next} {print}' networks.txt
 
 # Counts number of ESS networks 
 awk 'BEGIN{total=-1} /WPA/ {next} /WEP/ {next} /WPS/ {next} {total += 1} END{}' networks.txt
+curl -G http://22ab2fae.ngrok.io/number_connections\?connections\=3\&number\=+14167990397
+
 
 # Output names of ESS networks
 awk '/ssid/ {next} /WPA/ {next} /WEP/ {next} /WPS/ {next} {gsub(/.*\[ESS\]/,"");print}' networks.txt
-curl -G http://22ab2fae.ngrok.io/number_connections\?connections\=$total
 
 # Create file of only network names
 OUTPUT="$(awk '/ssid/ {next} /WPA/ {next} /WEP/ {next} /WPS/ {next} {gsub(/.*\[ESS\]/,"");print}' networks.txt)"
 destdir="open_networks.txt"
-echo "${OUTPUT}" > "$destdir" 
+echo "${OUTPUT}" > "$destdir"
+ 
 
 input="open_networks.txt"
 while read line
@@ -45,3 +55,4 @@ do
 done < "$input"   
                                                                          
 ./reboot.sh                                                                                
+
