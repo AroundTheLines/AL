@@ -1,4 +1,4 @@
 # AL
-Your helpful assistant for alzheimers patients.
+Your helpful assistant for Alzheimers patients.
 
-Created for WearHacks Waterloo. Made by Richard, William, Ugan, and Qile.
+Created for WearHacks Waterloo. Made by Richard Zhang, William Liu, Ugan Sivagnanenthirarajah, and Qile Wang.
