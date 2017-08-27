@@ -1,4 +1,3 @@
-# AlzAssist
-Your helpful assistant for Alzheimers patients.
+# Around The Lines
 
 Created for WearHacks Waterloo. Made by Richard Zhang, William Liu, Ugan Sivagnanenthirarajah, and Qile Wang.
